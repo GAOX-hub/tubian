@@ -31,7 +31,6 @@
       font-size: 30px;
       font-weight: 800;
       color: #0a3d62;
-      letter-spacing: 0.06em;
     }
     header p {
       margin: 0;
@@ -89,18 +88,6 @@
       cursor: pointer;
       box-shadow: 0 4px 10px rgba(14,165,233,0.4);
     }
-    #set-orig-btn:hover {
-      background: #0284c7;
-    }
-    .hint {
-      font-size: 13px;
-      color: #64748b;
-    }
-    .error {
-      margin-top: 4px;
-      font-size: 13px;
-      color: #b91c1c;
-    }
 
     /* 突变密码子选择 */
     .codon-select-row {
@@ -108,11 +95,6 @@
       align-items: center;
       gap: 8px;
       margin-bottom: 8px;
-    }
-    .codon-select-row label {
-      font-size: 14px;
-      color: #4b5563;
-      margin-right: 4px;
     }
     select.codon-pos {
       padding: 6px 8px;
@@ -164,37 +146,31 @@
     .mut-stoploss { background:#ede9fe; color:#5b21b6; border:1px solid #c4b5fd; }
     .mut-none { background:#e5e7eb; color:#374151; border:1px solid #d1d5db; }
 
-    .mut-desc {
-      margin-top: 4px;
-      font-size: 14px;
-      color: #4b5563;
-    }
-
     @media (max-width: 720px) {
       .flex-row { flex-direction: column; }
     }
   </style>
 </head>
 <body>
+
 <div class="page-outer">
   <div class="page-wrap">
+
     <header>
       <h1>生物密码子突变模拟器</h1>
-      <p>修改任意碱基，实时观察氨基酸变化与突变类型（同义 / 错义 / 无义）</p>
+      <p>修改三联体任意碱基，实时显示氨基酸变化与突变类型</p>
     </header>
 
     <div class="panel">
       <div class="flex-row">
+
         <!-- 原始密码子 -->
         <div class="flex-item">
           <h2 class="section-title">① 设置原始密码子（mRNA 5′→3′）</h2>
+
           <div class="orig-input-row">
             <input id="orig-input" type="text" maxlength="3" placeholder="例如 AUG">
             <button id="set-orig-btn">设为原始密码子</button>
-          </div>
-          <div class="hint">
-            · 可输入 RNA 密码子（A/U/C/G），也可输入含 T 的 DNA 密码子（会自动把 T 当作 U 处理）。<br>
-            · 例如 <code>ATG</code> 会被转换为 RNA 形式 <code>AUG</code>。
           </div>
           <div id="error-msg" class="error"></div>
 
@@ -213,21 +189,12 @@
         <!-- 突变密码子 -->
         <div class="flex-item">
           <h2 class="section-title">② 修改密码子产生突变</h2>
+
           <div class="codon-select-row">
-            <label>突变后密码子（mRNA 5′→3′）：</label>
-            <select id="pos1" class="codon-pos">
-              <option>A</option><option>U</option><option>G</option><option>C</option>
-            </select>
-            <select id="pos2" class="codon-pos">
-              <option>A</option><option>U</option><option>G</option><option>C</option>
-            </select>
-            <select id="pos3" class="codon-pos">
-              <option>A</option><option>U</option><option>G</option><option>C</option>
-            </select>
-          </div>
-          <div class="hint">
-            · 下拉框默认会同步原始密码子的 3 个碱基。<br>
-            · 修改任意一位碱基，右侧结果会<strong>实时</strong>更新。
+            <label>突变后密码子：</label>
+            <select id="pos1" class="codon-pos"><option>A</option><option>U</option><option>G</option><option>C</option></select>
+            <select id="pos2" class="codon-pos"><option>A</option><option>U</option><option>G</option><option>C</option></select>
+            <select id="pos3" class="codon-pos"><option>A</option><option>U</option><option>G</option><option>C</option></select>
           </div>
 
           <div class="result-block" id="mut-info" style="display:none;">
@@ -243,214 +210,164 @@
               <span class="label-strong">突变类型：</span>
               <span id="mut-type-tag" class="mut-type mut-none">—</span>
             </div>
-            <div id="mut-desc" class="mut-desc"></div>
+            <div id="mut-desc" style="font-size:14px;color:#4b5563;"></div>
           </div>
         </div>
+
       </div>
     </div>
+
   </div>
 </div>
 
 <script>
-// ===== 标准遗传密码表（RNA） =====
-const CODON_TABLE = {
-  "UUU": { aa: "Phe", name: "苯丙氨酸" },
-  "UUC": { aa: "Phe", name: "苯丙氨酸" },
-  "UUA": { aa: "Leu", name: "亮氨酸" },
-  "UUG": { aa: "Leu", name: "亮氨酸" },
-  "CUU": { aa: "Leu", name: "亮氨酸" },
-  "CUC": { aa: "Leu", name: "亮氨酸" },
-  "CUA": { aa: "Leu", name: "亮氨酸" },
-  "CUG": { aa: "Leu", name: "亮氨酸" },
-  "AUU": { aa: "Ile", name: "异亮氨酸" },
-  "AUC": { aa: "Ile", name: "异亮氨酸" },
-  "AUA": { aa: "Ile", name: "异亮氨酸" },
-  "AUG": { aa: "Met", name: "甲硫氨酸", note: "常见起始密码子" },
-  "GUU": { aa: "Val", name: "缬氨酸" },
-  "GUC": { aa: "Val", name: "缬氨酸" },
-  "GUA": { aa: "Val", name: "缬氨酸" },
-  "GUG": { aa: "Val", name: "缬氨酸" },
-  "UCU": { aa: "Ser", name: "丝氨酸" },
-  "UCC": { aa: "Ser", name: "丝氨酸" },
-  "UCA": { aa: "Ser", name: "丝氨酸" },
-  "UCG": { aa: "Ser", name: "丝氨酸" },
-  "AGU": { aa: "Ser", name: "丝氨酸" },
-  "AGC": { aa: "Ser", name: "丝氨酸" },
-  "CCU": { aa: "Pro", name: "脯氨酸" },
-  "CCC": { aa: "Pro", name: "脯氨酸" },
-  "CCA": { aa: "Pro", name: "脯氨酸" },
-  "CCG": { aa: "Pro", name: "脯氨酸" },
-  "ACU": { aa: "Thr", name: "苏氨酸" },
-  "ACC": { aa: "Thr", name: "苏氨酸" },
-  "ACA": { aa: "Thr", name: "苏氨酸" },
-  "ACG": { aa: "Thr", name: "苏氨酸" },
-  "GCU": { aa: "Ala", name: "丙氨酸" },
-  "GCC": { aa: "Ala", name: "丙氨酸" },
-  "GCA": { aa: "Ala", name: "丙氨酸" },
-  "GCG": { aa: "Ala", name: "丙氨酸" },
-  "UAU": { aa: "Tyr", name: "酪氨酸" },
-  "UAC": { aa: "Tyr", name: "酪氨酸" },
-  "UAA": { aa: "Stop", name: "终止密码子" },
-  "UAG": { aa: "Stop", name: "终止密码子" },
-  "UGA": { aa: "Stop", name: "终止密码子" },
-  "UGU": { aa: "Cys", name: "半胱氨酸" },
-  "UGC": { aa: "Cys", name: "半胱氨酸" },
-  "UGG": { aa: "Trp", name: "色氨酸" },
-  "CAU": { aa: "His", name: "组氨酸" },
-  "CAC": { aa: "His", name: "组氨酸" },
-  "CAA": { aa: "Gln", name: "谷氨酰胺" },
-  "CAG": { aa: "Gln", name: "谷氨酰胺" },
-  "AAU": { aa: "Asn", name: "天冬酰胺" },
-  "AAC": { aa: "Asn", name: "天冬酰胺" },
-  "AAA": { aa: "Lys", name: "赖氨酸" },
-  "AAG": { aa: "Lys", name: "赖氨酸" },
-  "GAU": { aa: "Asp", name: "天冬氨酸" },
-  "GAC": { aa: "Asp", name: "天冬氨酸" },
-  "GAA": { aa: "Glu", name: "谷氨酸" },
-  "GAG": { aa: "Glu", name: "谷氨酸" },
-  "CGU": { aa: "Arg", name: "精氨酸" },
-  "CGC": { aa: "Arg", name: "精氨酸" },
-  "CGA": { aa: "Arg", name: "精氨酸" },
-  "CGG": { aa: "Arg", name: "精氨酸" },
-  "AGA": { aa: "Arg", name: "精氨酸" },
-  "AGG": { aa: "Arg", name: "精氨酸" },
-  "GGU": { aa: "Gly", name: "甘氨酸" },
-  "GGC": { aa: "Gly", name: "甘氨酸" },
-  "GGA": { aa: "Gly", name: "甘氨酸" },
-  "GGG": { aa: "Gly", name: "甘氨酸" }
+/* ========== 遗传密码表（RNA） ========== */
+const TABLE={
+"UUU":{aa:"Phe",name:"苯丙氨酸"}, "UUC":{aa:"Phe",name:"苯丙氨酸"},
+"UUA":{aa:"Leu",name:"亮氨酸"}, "UUG":{aa:"Leu",name:"亮氨酸"},
+"CUU":{aa:"Leu",name:"亮氨酸"}, "CUC":{aa:"Leu",name:"亮氨酸"},
+"CUA":{aa:"Leu",name:"亮氨酸"}, "CUG":{aa:"Leu",name:"亮氨酸"},
+"AUU":{aa:"Ile",name:"异亮氨酸"}, "AUC":{aa:"Ile",name:"异亮氨酸"},
+"AUA":{aa:"Ile",name:"异亮氨酸"},
+"AUG":{aa:"Met",name:"甲硫氨酸"},
+"GUU":{aa:"Val",name:"缬氨酸"}, "GUC":{aa:"Val",name:"缬氨酸"},
+"GUA":{aa:"Val",name:"缬氨酸"}, "GUG":{aa:"Val",name:"缬氨酸"},
+"UCU":{aa:"Ser",name:"丝氨酸"}, "UCC":{aa:"Ser",name:"丝氨酸"},
+"UCA":{aa:"Ser",name:"丝氨酸"}, "UCG":{aa:"Ser",name:"丝氨酸"},
+"AGU":{aa:"Ser",name:"丝氨酸"}, "AGC":{aa:"Ser",name:"丝氨酸"},
+"CCU":{aa:"Pro",name:"脯氨酸"}, "CCC":{aa:"Pro",name:"脯氨酸"},
+"CCA":{aa:"Pro",name:"脯氨酸"}, "CCG":{aa:"Pro",name:"脯氨酸"},
+"ACU":{aa:"Thr",name:"苏氨酸"}, "ACC":{aa:"Thr",name:"苏氨酸"},
+"ACA":{aa:"Thr",name:"苏氨酸"}, "ACG":{aa:"Thr",name:"苏氨酸"},
+"GCU":{aa:"Ala",name:"丙氨酸"}, "GCC":{aa:"Ala",name:"丙氨酸"},
+"GCA":{aa:"Ala",name:"丙氨酸"}, "GCG":{aa:"Ala",name:"丙氨酸"},
+"UAU":{aa:"Tyr",name:"酪氨酸"}, "UAC":{aa:"Tyr",name:"酪氨酸"},
+"UAA":{aa:"Stop",name:"终止密码子"},
+"UAG":{aa:"Stop",name:"终止密码子"},
+"UGA":{aa:"Stop",name:"终止密码子"},
+"UGU":{aa:"Cys",name:"半胱氨酸"}, "UGC":{aa:"Cys",name:"半胱氨酸"},
+"UGG":{aa:"Trp",name:"色氨酸"},
+"CAA":{aa:"Gln",name:"谷氨酰胺"}, "CAG":{aa:"Gln",name:"谷氨酰胺"},
+"CAU":{aa:"His",name:"组氨酸"}, "CAC":{aa:"His",name:"组氨酸"},
+"AAA":{aa:"Lys",name:"赖氨酸"}, "AAG":{aa:"Lys",name:"赖氨酸"},
+"AAU":{aa:"Asn",name:"天冬酰胺"}, "AAC":{aa:"Asn",name:"天冬酰胺"},
+"GAU":{aa:"Asp",name:"天冬氨酸"}, "GAC":{aa:"Asp",name:"天冬氨酸"},
+"GAA":{aa:"Glu",name:"谷氨酸"}, "GAG":{aa:"Glu",name:"谷氨酸"},
+"CGU":{aa:"Arg",name:"精氨酸"}, "CGC":{aa:"Arg",name:"精氨酸"},
+"CGA":{aa:"Arg",name:"精氨酸"}, "CGG":{aa:"Arg",name:"精氨酸"},
+"AGA":{aa:"Arg",name:"精氨酸"}, "AGG":{aa:"Arg",name:"精氨酸"},
+"GGU":{aa:"Gly",name:"甘氨酸"}, "GGC":{aa:"Gly",name:"甘氨酸"},
+"GGA":{aa:"Gly",name:"甘氨酸"}, "GGG":{aa:"Gly",name:"甘氨酸"}
 };
 
-// 当前原始密码子
 let originalCodon = "AUG";
 
-// 工具函数：标准化输入
-function normalizeCodon(raw) {
-  if (!raw) return { ok: false, error: "请输入 3 个碱基。" };
-  let s = raw.trim().toUpperCase();
-  if (s.length !== 3) return { ok: false, error: "密码子长度必须为 3。" };
-  // DNA 中的 T 按 U 处理
-  s = s.replace(/T/g, "U");
-  if (!/^[AUCG]{3}$/.test(s)) return { ok: false, error: "只允许 A/U/C/G（或含 T 的 DNA 密码子）。" };
-  return { ok: true, codon: s };
+function normalize(raw){
+  if(!raw) return {ok:false,error:"请输入 3 个碱基"};
+  let s=raw.trim().toUpperCase();
+  if(s.length!==3) return {ok:false,error:"长度必须为 3"};
+  s=s.replace(/T/g,"U");
+  if(!/^[AUCG]{3}$/.test(s)) return {ok:false,error:"只允许 A/U/C/G（或含 T 的 DNA 密码子）"};
+  return {ok:true,codon:s};
 }
 
-function getCodonInfo(codon) {
-  const info = CODON_TABLE[codon];
-  if (!info) return null;
-  return {
-    aaCode: info.aa,
-    aaName: info.name,
-    isStop: info.aa === "Stop",
-    label: info.aa === "Stop" ? `${info.name}` : `${info.name} (${info.aa})`
-  };
+function getInfo(c){
+  const x=TABLE[c];
+  if(!x) return null;
+  return {aa:x.aa,name:x.name,isStop:x.aa==="Stop",label:x.aa==="Stop"?x.name:`${x.name} (${x.aa})`};
 }
 
-// 设置原始密码子
-function setOriginal() {
-  const raw = document.getElementById("orig-input").value || originalCodon;
-  const res = normalizeCodon(raw);
-  const errEl = document.getElementById("error-msg");
-  const origInfoBlock = document.getElementById("orig-info");
-  const info = res.ok ? getCodonInfo(res.codon) : null;
+function setOriginal(){
+  const raw=document.getElementById("orig-input").value;
+  const res=normalize(raw);
+  const err=document.getElementById("error-msg");
+  const block=document.getElementById("orig-info");
 
-  if (!res.ok) {
-    errEl.textContent = res.error;
-    origInfoBlock.style.display = "none";
-    return;
-  }
-  if (!info) {
-    errEl.textContent = "该密码子在标准遗传密码表中未找到。";
-    origInfoBlock.style.display = "none";
+  if(!res.ok){
+    err.textContent=res.error;
+    block.style.display="none";
     return;
   }
 
-  errEl.textContent = "";
-  originalCodon = res.codon;
+  const info=getInfo(res.codon);
+  if(!info){
+    err.textContent="未找到对应氨基酸";
+    block.style.display="none";
+    return;
+  }
 
-  // 更新显示
-  document.getElementById("orig-codon-tag").textContent = originalCodon;
-  document.getElementById("orig-aa-tag").textContent = info.label;
-  origInfoBlock.style.display = "block";
+  err.textContent="";
+  originalCodon=res.codon;
 
-  // 同步突变密码子下拉框
-  document.getElementById("pos1").value = originalCodon[0];
-  document.getElementById("pos2").value = originalCodon[1];
-  document.getElementById("pos3").value = originalCodon[2];
+  document.getElementById("orig-codon-tag").textContent=originalCodon;
+  document.getElementById("orig-aa-tag").textContent=info.label;
+  block.style.display="block";
 
-  // 更新突变结果
+  document.getElementById("pos1").value=originalCodon[0];
+  document.getElementById("pos2").value=originalCodon[1];
+  document.getElementById("pos3").value=originalCodon[2];
+
   updateMutation();
 }
 
-// 计算突变结果
-function updateMutation() {
-  const mutCodon =
-    document.getElementById("pos1").value +
-    document.getElementById("pos2").value +
+function updateMutation(){
+  const mut=document.getElementById("pos1").value+
+    document.getElementById("pos2").value+
     document.getElementById("pos3").value;
 
-  const origInfo = getCodonInfo(originalCodon);
-  const mutInfo = getCodonInfo(mutCodon);
-  const block = document.getElementById("mut-info");
-  const typeTag = document.getElementById("mut-type-tag");
-  const descEl = document.getElementById("mut-desc");
+  const origInfo=getInfo(originalCodon);
+  const mutInfo=getInfo(mut);
 
-  if (!origInfo || !mutInfo) {
-    block.style.display = "none";
-    return;
+  const block=document.getElementById("mut-info");
+  if(!origInfo||!mutInfo){
+    block.style.display="none";return;
+  }
+  block.style.display="block";
+
+  document.getElementById("mut-codon-tag").textContent=mut;
+  document.getElementById("mut-aa-tag").textContent=mutInfo.label;
+
+  let type="",cls="mut-none",desc="";
+
+  if(mut===originalCodon){
+    type="未发生突变";
+    desc="密码子不变，氨基酸保持不变";
+  }
+  else if(!origInfo.isStop && mutInfo.isStop){
+    type="无义突变"; cls="mut-non";
+    desc="突变后成为终止密码子，提前终止翻译";
+  }
+  else if(origInfo.isStop && !mutInfo.isStop){
+    type="终止丢失"; cls="mut-stoploss";
+    desc="原本是终止密码子，突变后不再终止";
+  }
+  else if(mutInfo.aa===origInfo.aa){
+    type="同义突变"; cls="mut-syn";
+    desc="密码子改变但氨基酸不变";
+  }
+  else{
+    type="错义突变"; cls="mut-mis";
+    desc="氨基酸改变，可能影响蛋白质功能";
   }
 
-  document.getElementById("mut-codon-tag").textContent = mutCodon;
-  document.getElementById("mut-aa-tag").textContent = mutInfo.label;
-  block.style.display = "block";
-
-  // 比较并判断突变类型
-  let typeText = "";
-  let typeClass = "mut-none";
-  let descText = "";
-
-  if (mutCodon === originalCodon) {
-    typeText = "未发生突变";
-    descText = "突变后密码子与原始密码子完全相同，氨基酸序列不发生变化。";
-  } else if (!origInfo.isStop && mutInfo.isStop) {
-    typeText = "无义突变";
-    typeClass = "mut-non";
-    descText = "突变后变成终止密码子，提前终止翻译，通常对蛋白质功能影响很大。";
-  } else if (origInfo.isStop && !mutInfo.isStop) {
-    typeText = "终止丢失突变";
-    typeClass = "mut-stoploss";
-    descText = "原本是终止密码子，突变后不再终止，肽链会继续延长。";
-  } else if (mutInfo.aaCode === origInfo.aaCode) {
-    typeText = "同义突变";
-    typeClass = "mut-syn";
-    descText = "密码子发生改变，但编码的氨基酸保持不变，属于遗传密码的简并性。";
-  } else {
-    typeText = "错义突变";
-    typeClass = "mut-mis";
-    descText = "密码子改变导致氨基酸不同，可能改变蛋白质结构和功能。";
+  const diff=[];
+  for(let i=0;i<3;i++){
+    if(originalCodon[i]!==mut[i]) diff.push(i+1);
   }
+  if(diff.length) desc+=`（变化位置：第 ${diff.join("，第 ")} 位）`;
 
-  // 碱基改变位置
-  const diffs = [];
-  for (let i = 0; i < 3; i++) {
-    if (originalCodon[i] !== mutCodon[i]) diffs.push(i + 1);
-  }
-  if (diffs.length > 0) {
-    descText += `（发生变化的碱基位置：第 ${diffs.join("，第 ")} 位）`;
-  }
-
-  typeTag.className = "mut-type " + typeClass;
-  typeTag.textContent = typeText;
-  descEl.textContent = descText;
+  const tt=document.getElementById("mut-type-tag");
+  tt.className="mut-type "+cls;
+  tt.textContent=type;
+  document.getElementById("mut-desc").textContent=desc;
 }
 
-// 绑定事件
-document.getElementById("set-orig-btn").addEventListener("click", setOriginal);
-document.getElementById("pos1").addEventListener("change", updateMutation);
-document.getElementById("pos2").addEventListener("change", updateMutation);
-document.getElementById("pos3").addEventListener("change", updateMutation);
+document.getElementById("set-orig-btn").onclick=setOriginal;
+["pos1","pos2","pos3"].forEach(id=>{
+  document.getElementById(id).onchange=updateMutation;
+});
 
-// 初始化：默认原始密码子 AUG
-document.getElementById("orig-input").value = "AUG";
+document.getElementById("orig-input").value="AUG";
 setOriginal();
 </script>
 </body>
